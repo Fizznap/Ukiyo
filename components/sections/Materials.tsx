@@ -34,6 +34,7 @@ export default function Materials() {
                 src={mat.src} 
                 alt={mat.name} 
                 fill 
+                sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
                 style={{ objectFit: 'cover', transition: 'transform 700ms var(--ease-luxury)' }} 
                 className="mat-img"
               />

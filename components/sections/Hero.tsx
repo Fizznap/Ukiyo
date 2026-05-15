@@ -10,7 +10,6 @@ gsap.registerPlugin(ScrollTrigger);
 export default function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
   const lightRef = useRef<HTMLDivElement>(null);
-  const headlineRef = useRef<HTMLDivElement>(null);
   const revealEls = useRef<HTMLElement[]>([]);
 
   /* ── Mouse-follow radial light ── */
@@ -27,43 +26,38 @@ export default function Hero() {
     return () => window.removeEventListener('mousemove', onMove);
   }, []);
 
-  /* ── GSAP text reveals + parallax ── */
+  /* ── GSAP text reveals & floating images ── */
   useEffect(() => {
     const els = revealEls.current.filter(Boolean);
-    if (!els.length) return;
-
-    // Stagger reveal on load (after loading screen exits ~2.4s)
-    const tl = gsap.timeline({ delay: 2.6 });
-    tl.fromTo(
-      els,
-      { opacity: 0, y: 40 },
-      {
-        opacity: 1,
-        y: 0,
-        duration: 1.1,
-        ease: 'expo.out',
-        stagger: 0.12,
-      }
-    );
-
-    // Parallax — headline moves at 0.4× scroll speed
-    const headline = headlineRef.current;
-    if (headline) {
-      ScrollTrigger.create({
-        trigger: sectionRef.current,
-        start: 'top top',
-        end: 'bottom top',
-        scrub: true,
-        onUpdate: (self) => {
-          const y = self.progress * window.innerHeight * 0.4;
-          gsap.set(headline, { y });
-        },
-      });
+    if (els.length) {
+      gsap.fromTo(
+        els,
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 1.2,
+          ease: 'expo.out',
+          stagger: 0.15,
+          delay: 0.2, // Small delay for load
+        }
+      );
     }
 
+    // Floating animation for right-side overlapping images
+    gsap.to('.hero-image-float', {
+      y: '15px',
+      rotation: '+=1.5',
+      duration: 4,
+      yoyo: true,
+      repeat: -1,
+      ease: 'sine.inOut',
+      stagger: 0.5
+    });
+
     return () => {
-      tl.kill();
-      ScrollTrigger.getAll().forEach((st) => st.kill());
+      gsap.killTweensOf(els);
+      gsap.killTweensOf('.hero-image-float');
     };
   }, []);
 
@@ -79,306 +73,278 @@ export default function Hero() {
       style={{
         position: 'relative',
         width: '100%',
-        minHeight: '100svh',
-        backgroundColor: 'var(--color-beige)',
+        minHeight: '100vh',
+        backgroundColor: '#F5F0E8', // Warm beige
         display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        padding: 'calc(var(--nav-height) + 4rem) clamp(1.5rem, 5vw, 5rem) 5rem',
+        alignItems: 'center',
         overflow: 'hidden',
       }}
     >
-      {/* Mouse-follow bronze radial gradient */}
+      {/* Mouse-follow bronze radial gradient light */}
       <div
         ref={lightRef}
         aria-hidden="true"
         style={{
           position: 'fixed',
-          width: '500px',
-          height: '500px',
+          width: '600px',
+          height: '600px',
           borderRadius: '50%',
-          background:
-            'radial-gradient(circle, rgba(184,134,11,0.07) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(184,134,11,0.08) 0%, transparent 60%)',
           pointerEvents: 'none',
           transform: 'translate(-50%, -50%)',
           zIndex: 0,
-          transition: 'left 80ms linear, top 80ms linear',
           willChange: 'left, top',
         }}
       />
 
-      {/* Faint background serif watermark */}
-      <span
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          right: 'clamp(-2rem, -2vw, -4rem)',
-          top: '50%',
-          transform: 'translateY(-50%) rotate(90deg)',
-          fontFamily: 'var(--font-display)',
-          fontSize: 'clamp(10rem, 18vw, 22rem)',
-          fontWeight: 700,
-          color: 'rgba(44,24,16,0.03)',
-          letterSpacing: '-0.04em',
-          lineHeight: 1,
-          userSelect: 'none',
-          pointerEvents: 'none',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        UKIYO
-      </span>
-
-      {/* Main content */}
-      <div
-        style={{
-          position: 'relative',
+      <div 
+        style={{ 
+          display: 'flex', 
+          width: '100%', 
+          maxWidth: '1600px', 
+          margin: '0 auto', 
+          padding: '0 clamp(2rem, 5vw, 5rem)',
           zIndex: 1,
-          maxWidth: 'var(--max-w-content)',
-          width: '100%',
+          flexWrap: 'wrap',
         }}
       >
-        {/* Location label */}
-        <p
-          ref={addReveal}
-          className="text-label"
-          style={{ marginBottom: 'clamp(1.5rem, 3vh, 2.5rem)', opacity: 0 }}
+        {/* Left side (50% width) */}
+        <div 
+          style={{ 
+            flex: '1 1 50%', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            justifyContent: 'center',
+            paddingRight: '4rem',
+            minWidth: '320px',
+          }}
         >
-          Mumbai &nbsp;·&nbsp; Maharashtra &nbsp;·&nbsp; Est. 2014
-        </p>
+          {/* Small label top */}
+          <p
+            ref={addReveal}
+            style={{
+              fontFamily: 'var(--font-body), "DM Sans", sans-serif',
+              fontSize: '10px',
+              color: '#B8860B', // Bronze
+              textTransform: 'uppercase',
+              letterSpacing: '0.3em',
+              marginBottom: '2rem',
+              fontWeight: 500,
+              opacity: 0,
+            }}
+          >
+            MUMBAI · MAHARASHTRA · EST. 2014
+          </p>
 
-        {/* Headline block with parallax wrapper */}
-        <div ref={headlineRef} style={{ willChange: 'transform' }}>
+          {/* Main headline */}
           <h1
             style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'var(--text-hero)',
+              fontFamily: 'var(--font-display), "Cormorant Garamond", serif',
+              fontSize: 'clamp(48px, 6vw, 88px)',
               fontWeight: 300,
-              lineHeight: 'var(--lh-tight)',
-              letterSpacing: 'var(--ls-tight)',
-              color: 'var(--color-deep-brown)',
-              maxWidth: '14ch',
+              lineHeight: 1.05,
+              color: '#2C1810', // Deep brown
+              marginBottom: '2rem',
+              letterSpacing: '-0.01em',
             }}
           >
-            <span
-              ref={addReveal}
-              style={{ display: 'block', opacity: 0 }}
-            >
-              Where
-            </span>
-            <span
-              ref={addReveal}
-              style={{ display: 'block', opacity: 0 }}
-            >
-              <em
-                style={{
-                  fontStyle: 'italic',
-                  color: 'var(--color-bronze)',
-                  fontWeight: 300,
-                }}
-              >
-                emotion
-              </em>{' '}
-              meets
-            </span>
-            <span
-              ref={addReveal}
-              style={{ display: 'block', opacity: 0 }}
-            >
-              interior.
+            <span ref={addReveal} style={{ display: 'block', opacity: 0 }}>Space that feels intentional,</span>
+            <span ref={addReveal} style={{ display: 'block', opacity: 0 }}>designed for the way you live,</span>
+            <span ref={addReveal} style={{ display: 'block', opacity: 0 }}>
+              where <em style={{ fontStyle: 'italic', color: '#B8860B' }}>emotion meets interior.</em>
             </span>
           </h1>
+
+          {/* Sub-label founder */}
+          <p
+            ref={addReveal}
+            style={{
+              fontFamily: 'var(--font-body), "DM Sans", sans-serif',
+              fontSize: '11px',
+              color: '#8B7355', // Muted brown
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              marginBottom: '3rem',
+              opacity: 0,
+            }}
+          >
+            Pratik Soni · Founder &amp; Principal Designer
+          </p>
+
+          {/* Two buttons */}
+          <div ref={addReveal} style={{ display: 'flex', gap: '1.5rem', opacity: 0, flexWrap: 'wrap' }}>
+            <a
+              href="#projects"
+              style={{
+                backgroundColor: '#2C1810',
+                color: '#F5F0E8',
+                padding: '1.2rem 2.5rem',
+                textDecoration: 'none',
+                fontFamily: 'var(--font-body), "DM Sans", sans-serif',
+                fontSize: '12px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                fontWeight: 500,
+                transition: 'background-color 0.3s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#4A3022')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#2C1810')}
+            >
+              View Our Work
+            </a>
+            <a
+              href="#contact"
+              style={{
+                border: '1px solid #2C1810',
+                color: '#2C1810',
+                padding: '1.2rem 2.5rem',
+                textDecoration: 'none',
+                fontFamily: 'var(--font-body), "DM Sans", sans-serif',
+                fontSize: '12px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                fontWeight: 500,
+                transition: 'all 0.3s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#2C1810';
+                e.currentTarget.style.color = '#F5F0E8';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = '#2C1810';
+              }}
+            >
+              Begin Your Space
+            </a>
+          </div>
         </div>
 
-        {/* Sub-row: founder + descriptor */}
-        <div
-          ref={addReveal}
-          style={{
+        {/* Right side (50% width) - Overlapping images */}
+        <div 
+          className="hero-right-images"
+          style={{ 
+            flex: '1 1 50%', 
+            position: 'relative', 
+            minHeight: '600px',
             display: 'flex',
-            alignItems: 'flex-start',
-            gap: 'clamp(2rem, 6vw, 5rem)',
-            marginTop: 'clamp(2rem, 4vh, 3.5rem)',
-            opacity: 0,
-            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          {/* Founder label */}
-          <div>
-            <p
-              style={{
-                fontFamily: 'var(--font-body)',
-                fontSize: 'var(--text-sm)',
-                fontWeight: 300,
-                color: 'var(--color-muted-brown)',
-                letterSpacing: 'var(--ls-wide)',
-                marginBottom: '0.25rem',
-              }}
-            >
-              Led by
-            </p>
-            <p
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 'clamp(1.1rem, 2vw, 1.4rem)',
-                fontWeight: 400,
-                color: 'var(--color-deep-brown)',
-                letterSpacing: '0.02em',
-              }}
-            >
-              Pratik Soni
-            </p>
+          {/* Image 1 (Back left) */}
+          <div 
+            className="hero-image-float"
+            style={{ 
+              position: 'absolute', 
+              width: '300px', 
+              height: '420px', 
+              transform: 'rotate(-5deg) translate(-80px, -40px)', 
+              mixBlendMode: 'multiply',
+              zIndex: 1,
+              boxShadow: '0 20px 40px rgba(44,24,16,0.1)'
+            }}
+          >
+            <Image 
+              src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=800&q=80" 
+              alt="Warm luxury interior" 
+              fill 
+              sizes="(min-width: 1024px) 300px, 50vw"
+              style={{ objectFit: 'cover' }} 
+              priority
+            />
+            {/* Warm overlay */}
+            <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(184,134,11,0.08)', mixBlendMode: 'overlay' }} />
           </div>
 
-          {/* Hairline separator */}
-          <div
-            style={{
-              width: '1px',
-              height: '48px',
-              backgroundColor: 'var(--color-glass-border)',
-              flexShrink: 0,
-              alignSelf: 'center',
-            }}
-          />
-
-          {/* Descriptor */}
-          <p
-            style={{
-              fontFamily: 'var(--font-body)',
-              fontSize: 'var(--text-sm)',
-              fontWeight: 300,
-              color: 'var(--color-muted-brown)',
-              lineHeight: 'var(--lh-relaxed)',
-              maxWidth: '34ch',
+          {/* Image 2 (Front right) */}
+          <div 
+            className="hero-image-float"
+            style={{ 
+              position: 'absolute', 
+              width: '280px', 
+              height: '380px', 
+              transform: 'rotate(6deg) translate(80px, 60px)', 
+              mixBlendMode: 'multiply', 
+              zIndex: 2,
+              boxShadow: '0 20px 40px rgba(44,24,16,0.1)'
             }}
           >
-            Designing thoughtful spaces for discerning homes and
-            hospitality across Mumbai since 2014.
-          </p>
-        </div>
+            <Image 
+              src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80" 
+              alt="Minimalist design space" 
+              fill 
+              sizes="(min-width: 1024px) 280px, 50vw"
+              style={{ objectFit: 'cover' }} 
+              priority
+            />
+            {/* Warm overlay */}
+            <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(184,134,11,0.08)', mixBlendMode: 'overlay' }} />
+          </div>
 
-        {/* CTA row */}
-        <div
-          ref={addReveal}
-          style={{
-            display: 'flex',
-            gap: 'var(--space-6)',
-            marginTop: 'clamp(2.5rem, 5vh, 4rem)',
-            opacity: 0,
-            alignItems: 'center',
-            flexWrap: 'wrap',
-          }}
-        >
-          <a
-            href="#projects"
-            className="btn btn--primary"
-            id="hero-view-work"
-            aria-label="View Ukiyo Interior projects"
+          {/* Image 3 (Bottom center) */}
+          <div 
+            className="hero-image-float"
+            style={{ 
+              position: 'absolute', 
+              width: '220px', 
+              height: '300px', 
+              transform: 'rotate(-2deg) translate(10px, 160px)', 
+              mixBlendMode: 'multiply', 
+              zIndex: 3,
+              boxShadow: '0 20px 40px rgba(44,24,16,0.1)'
+            }}
           >
-            View Our Work
-          </a>
-          <a
-            href="#contact"
-            className="btn btn--ghost"
-            id="hero-begin-space"
-            aria-label="Begin your space with Ukiyo Interior"
-          >
-            Begin Your Space
-          </a>
+            <Image 
+              src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=800&q=80" 
+              alt="Texture and mood" 
+              fill 
+              sizes="(min-width: 1024px) 220px, 50vw"
+              style={{ objectFit: 'cover' }} 
+            />
+            {/* Warm overlay */}
+            <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(184,134,11,0.08)', mixBlendMode: 'overlay' }} />
+          </div>
         </div>
       </div>
 
-      {/* Scroll indicator */}
+      {/* Scroll indicator bottom center */}
       <div
         ref={addReveal}
         aria-hidden="true"
         style={{
           position: 'absolute',
-          bottom: 'clamp(2rem, 4vh, 3rem)',
+          bottom: '2rem',
           left: '50%',
           transform: 'translateX(-50%)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '0.5rem',
+          gap: '1rem',
           opacity: 0,
-          zIndex: 1,
+          zIndex: 10,
         }}
       >
-        <span
-          className="text-label"
-          style={{ color: 'var(--color-muted-brown)' }}
-        >
-          Scroll
-        </span>
         <div
           style={{
             width: '1px',
-            height: '48px',
-            backgroundColor: 'var(--color-bronze)',
-            animation: 'pulse-fade 2s ease-in-out infinite',
+            height: '60px',
+            backgroundColor: '#B8860B', // Bronze
+            animation: 'hero-scroll-pulse 2.5s ease-in-out infinite',
+            transformOrigin: 'top',
           }}
         />
       </div>
-      {/* Editorial Image Collage (Right Side) */}
-      <div
-        ref={addReveal}
-        style={{
-          position: 'absolute',
-          right: 'clamp(2rem, 5vw, 8rem)',
-          top: '50%',
-          marginTop: 'calc(var(--nav-height) / 2)',
-          transform: 'translateY(-50%)',
-          width: 'clamp(300px, 35vw, 500px)',
-          height: 'clamp(400px, 60vh, 650px)',
-          zIndex: 2,
-          opacity: 0,
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-        className="hero-collage"
-      >
-        <div
-          style={{
-            position: 'relative',
-            width: '80%',
-            height: '65%',
-            alignSelf: 'flex-end',
-            overflow: 'hidden',
-          }}
-        >
-          <Image
-            src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=900&q=80&auto=format&fit=crop"
-            alt="Ukiyo Interior Residential"
-            fill
-            style={{ objectFit: 'cover' }}
-            priority
-          />
-        </div>
-        <div
-          style={{
-            position: 'relative',
-            width: '65%',
-            height: '45%',
-            alignSelf: 'flex-start',
-            marginTop: '-15%',
-            overflow: 'hidden',
-            zIndex: 3,
-            border: '8px solid var(--color-beige)',
-          }}
-        >
-          <Image
-            src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=900&q=80&auto=format&fit=crop"
-            alt="Ukiyo Interior Detail"
-            fill
-            style={{ objectFit: 'cover' }}
-            priority
-          />
-        </div>
-      </div>
 
       <style>{`
+        @keyframes hero-scroll-pulse {
+          0% { transform: scaleY(0); opacity: 0; }
+          50% { transform: scaleY(1); opacity: 1; }
+          100% { transform: scaleY(1) translateY(100%); opacity: 0; }
+        }
+
         @media (max-width: 1024px) {
-          .hero-collage {
+          .hero-right-images {
             display: none !important;
           }
         }

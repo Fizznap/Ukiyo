@@ -1,6 +1,6 @@
 import Navigation from '@/components/Navigation';
 import Hero from '@/components/sections/Hero';
-import Atlas from '@/components/sections/Atlas';
+import AtlasGlobe from '@/components/sections/AtlasGlobe';
 import Projects from '@/components/sections/Projects';
 import EmotionalJourney from '@/components/sections/EmotionalJourney';
 import Process from '@/components/sections/Process';
@@ -20,10 +20,10 @@ export default function Home() {
       {/* 01 — Hero */}
       <Hero />
 
-      {/* 01 — Atlas: Signature Map Experience (400vh pinned) */}
-      <Atlas />
+      {/* 02 — AtlasGlobe: 600vh D3 orthographic → NASA satellite → Mumbai pins */}
+      <AtlasGlobe />
 
-      {/* 02 — Featured Projects */}
+      {/* 03 — Featured Projects */}
       <Projects />
 
       {/* 03 — The Experience (Emotional Journey) */}
