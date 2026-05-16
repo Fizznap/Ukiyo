@@ -53,7 +53,7 @@ export default function Materials() {
               >
                 <span style={{
                   fontFamily: 'var(--font-display)',
-                  color: '#fff',
+                  color: 'var(--color-beige)',
                   fontSize: '1.5rem',
                   letterSpacing: '0.05em'
                 }}>

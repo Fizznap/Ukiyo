@@ -104,7 +104,7 @@ export default function ProjectModal({ project, onClose }: Props) {
           overflow: 'hidden',
           backgroundColor: '#F5F0E8', // Solid beige background to contrast the glass
           borderRadius: '16px', // Rounded corners for premium feel
-          border: '1px solid rgba(255,255,255,0.6)',
+          border: '1px solid rgba(245, 240, 232, 0.6)',
           boxShadow: '0 32px 80px rgba(44,24,16,0.15)',
           opacity: 0,
           transform: 'scale(0.94)',
@@ -245,7 +245,7 @@ export default function ProjectModal({ project, onClose }: Props) {
                     border: '1px solid var(--color-glass-border)',
                     borderRadius: '99px',
                     padding: '3px 10px',
-                    backgroundColor: 'rgba(255,255,255,0.4)',
+                    backgroundColor: 'rgba(245, 240, 232, 0.4)',
                   }}
                 >
                   {pill}

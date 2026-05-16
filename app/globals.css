@@ -15,11 +15,8 @@
   --color-beige:        #F5F0E8;
   --color-deep-brown:   #2C1810;
   --color-bronze:       #B8860B;
-  --color-soft-black:   #0A0A0A;
-  --color-muted-brown:  #8B7355;
   --color-card:         #EDE8DF;
   --color-card-hover:   #E8E2D8;
-  --color-white:        #FFFFFF;
 
   /* Semantic aliases */
   --color-bg:           var(--color-beige);
