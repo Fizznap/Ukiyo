@@ -102,6 +102,10 @@ export default function CustomCursor() {
           height: 'var(--cursor-size)',
           borderRadius: '50%',
           backgroundColor: 'var(--color-bronze)',
+          /* Beige outline keeps the cursor visible on bronze-saturated areas
+             (Maharashtra fill, India fill, etc.) where the dot would
+             otherwise blend into the background.                           */
+          boxShadow: '0 0 0 1.5px rgba(245, 240, 232, 0.95)',
           zIndex: 'var(--z-cursor)' as unknown as number,
           pointerEvents: 'none',
           willChange: 'transform',

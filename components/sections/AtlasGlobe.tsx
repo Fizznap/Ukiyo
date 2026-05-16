@@ -15,6 +15,8 @@ import type {
 import type { Topology, GeometryCollection } from 'topojson-specification';
 
 import { atlasGlobeProgress } from '@/components/three/AtlasGlobeWebGL';
+import ProjectModal from '@/components/ProjectModal';
+import { projects, type Project } from '@/data/projects';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -48,14 +50,29 @@ const INDIA_BOUNDS: [[number, number], [number, number]] = [
   [97, 37],
 ];
 
-/* ─── Mumbai project locations ─── */
-const MUMBAI_LOCATIONS = [
-  { name: 'MALAD', lon: 72.8479, lat: 19.1874 },
-  { name: 'BANDRA', lon: 72.8347, lat: 19.0596 },
-  { name: 'POWAI', lon: 72.9054, lat: 19.1197 },
-  { name: 'MALABAR HILL', lon: 72.7959, lat: 18.9554 },
-  { name: 'WORLI', lon: 72.8183, lat: 19.013 },
-  { name: 'JUHU', lon: 72.8296, lat: 19.1075 },
+/* Mumbai roads + coastline — pre-fetched from OpenStreetMap and shipped
+   as static assets in /public/geo/. Avoids runtime Overpass dependency
+   and CORS/UA restrictions, and keeps load fast (gzip ~350KB).        */
+const MUMBAI_ROADS_BBOX = {
+  west: 72.78,
+  south: 18.88,
+  east: 73.00,
+  north: 19.27,
+};
+const MUMBAI_ROADS_URL = '/geo/mumbai-roads.json';
+const MUMBAI_COAST_URL = '/geo/mumbai-coast.json';
+/* Highway tier index (matches the build-time export order in
+   fetch-mumbai-osm.mjs).                                       */
+const HW_WEIGHT = [1.6, 1.4, 1.1, 0.85, 0.65, 0.4, 0.4]; // motorway → unclassified
+
+/* ─── Mumbai project locations — each maps to a project in data/projects.ts ─── */
+const MUMBAI_LOCATIONS: { name: string; lon: number; lat: number; projectId: string }[] = [
+  { name: 'MALAD',        lon: 72.8479, lat: 19.1874, projectId: 'andheri-wellness-spa' },
+  { name: 'BANDRA',       lon: 72.8347, lat: 19.0596, projectId: 'bandra-penthouse' },
+  { name: 'POWAI',        lon: 72.9054, lat: 19.1197, projectId: 'powai-tech-office' },
+  { name: 'MALABAR HILL', lon: 72.7959, lat: 18.9554, projectId: 'malabar-hill-residence' },
+  { name: 'WORLI',        lon: 72.8183, lat: 19.013,  projectId: 'worli-sea-view' },
+  { name: 'JUHU',         lon: 72.8296, lat: 19.1075, projectId: 'juhu-boutique-hotel' },
 ];
 
 /* ─── Utilities ─── */
@@ -65,6 +82,17 @@ const smoothstep = (a: number, b: number, v: number) => {
   const t = clamp((v - a) / (b - a), 0, 1);
   return t * t * (3 - 2 * t);
 };
+
+/* ─── Mumbai compact road format — [tier_index, [[lon, lat], ...]] ─── */
+type CompactRoad = [number, [number, number][]];
+type CompactCoast = [number, number][];
+
+interface MumbaiRoad {
+  /** Geographic line (lon, lat pairs) */
+  line: [number, number][];
+  /** Stroke width tier — major to minor */
+  weight: number;
+}
 
 /* Hardcoded Maharashtra fallback polygon */
 const MAHARASHTRA_FALLBACK: Feature<Geometry, GeoJsonProperties> = {
@@ -97,6 +125,7 @@ const MAHARASHTRA_FALLBACK: Feature<Geometry, GeoJsonProperties> = {
 export default function AtlasGlobe() {
   const sectionRef = useRef<HTMLElement>(null);
   const mercatorCanvasRef = useRef<HTMLCanvasElement>(null);
+  const mumbaiCanvasRef = useRef<HTMLCanvasElement>(null);
   const dotsLayerRef = useRef<HTMLDivElement>(null);
   const vignetteRef = useRef<HTMLDivElement>(null);
   const globeContainerRef = useRef<HTMLDivElement>(null);
@@ -109,15 +138,24 @@ export default function AtlasGlobe() {
 
   const indiaStatesRef = useRef<Feature<Geometry, GeoJsonProperties>[] | null>(null);
   const maharashtraRef = useRef<Feature<Geometry, GeoJsonProperties> | null>(null);
+  /* Mumbai OSM road network + coastline — drawn on the mercator canvas */
+  const mumbaiRoadsRef = useRef<MumbaiRoad[] | null>(null);
+  const mumbaiCoastRef = useRef<[number, number][][] | null>(null);
 
   const stateRef = useRef({ progress: 0 });
   const rafRef = useRef<number | null>(null);
   const [active, setActive] = useState(true);
   const [globeOpacity, setGlobeOpacity] = useState(1);
+  /* Selected project for the modal — null when no pin clicked */
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
-  /* Mercator base — single fitted projection, computed once */
+  /* Mercator — rendered ONCE at base zoom centred on India.
+     Stages 4-5 zoom in via CSS transform (no re-render).      */
   const mercatorRenderedRef = useRef(false);
-  const MAX_ZOOM_FACTOR = 11;
+  /* Mumbai canvas — rendered ONCE at high resolution, native to Mumbai bbox.
+     Avoids the blur from CSS-scaling the India mercator 22×.              */
+  const mumbaiRenderedRef = useRef(false);
+  const INDIA_CENTER: [number, number] = [82.5, 22.5]; // approx geographic centre of India
 
   /* ─── Load India states ─── */
   useEffect(() => {
@@ -174,6 +212,43 @@ export default function AtlasGlobe() {
     }
 
     loadIndiaStates();
+
+    /* Mumbai roads + coastline — fetched in parallel; once loaded,
+       invalidate the mercator cache so it re-renders with roads.   */
+    /* Mumbai roads + coastline — load static JSON shipped in /public/geo/.
+       No runtime Overpass dependency.                                       */
+    (async () => {
+      try {
+        const res = await fetch(MUMBAI_ROADS_URL);
+        if (!res.ok) {
+          console.warn('[AtlasGlobe] Mumbai roads not found:', res.status);
+          return;
+        }
+        const data = (await res.json()) as CompactRoad[];
+        if (cancelled) return;
+        const roads: MumbaiRoad[] = data.map(([tier, line]) => ({
+          line,
+          weight: HW_WEIGHT[tier] ?? 0.5,
+        }));
+        mumbaiRoadsRef.current = roads;
+        mumbaiRenderedRef.current = false;
+      } catch (e) {
+        console.warn('[AtlasGlobe] Mumbai roads load error:', e);
+      }
+    })();
+
+    (async () => {
+      try {
+        const res = await fetch(MUMBAI_COAST_URL);
+        if (!res.ok) return;
+        const data = (await res.json()) as CompactCoast[];
+        if (cancelled) return;
+        mumbaiCoastRef.current = data;
+        mumbaiRenderedRef.current = false;
+      } catch (e) {
+        console.warn('[AtlasGlobe] Mumbai coast load error:', e);
+      }
+    })();
     return () => {
       cancelled = true;
     };
@@ -202,9 +277,9 @@ export default function AtlasGlobe() {
     ctx.clearRect(0, 0, mc.width, mc.height);
     ctx.scale(dpr, dpr);
 
-    /* Mercator projection at MAX zoom centred on Mumbai —
-       CSS transform scales it down for India / Maharashtra.   */
-    const projection = makeMaxZoomMercator(w, h);
+    /* Mercator projection at base zoom centred on India — fits all of
+       India in the viewport. Stages 4-5 zoom in via CSS transform.    */
+    const projection = makeIndiaBaseMercator(w, h);
     const path = d3.geoPath(projection.precision(0.5), ctx);
 
     /* Beige background */
@@ -222,17 +297,14 @@ export default function AtlasGlobe() {
       ctx.stroke();
     });
 
-    /* Maharashtra — bronze with glow */
+    /* Maharashtra — bronze with thin border (no shadow blur — would
+       balloon to a huge halo when CSS-scaled up to 22× for Mumbai).   */
     const mh = maharashtraRef.current;
     if (mh) {
-      ctx.save();
-      ctx.shadowColor = COLOR_BRONZE;
-      ctx.shadowBlur = 18;
       ctx.beginPath();
       path(mh);
       ctx.fillStyle = COLOR_BRONZE;
       ctx.fill();
-      ctx.restore();
 
       ctx.beginPath();
       path(mh);
@@ -244,9 +316,122 @@ export default function AtlasGlobe() {
     mercatorRenderedRef.current = true;
   }
 
-  /** Mercator projection at MAX_ZOOM_FACTOR centred on Mumbai. */
-  function makeMaxZoomMercator(w: number, h: number) {
-    /* Manual scale matching the D3 fitExtent intent: India 29° span → 85% of viewport */
+  /** Render the high-resolution Mumbai canvas — sharp roads + coastline,
+      native pixels matched to MUMBAI_ROADS_BBOX so it never blurs.       */
+  function renderMumbaiOnce() {
+    if (mumbaiRenderedRef.current) return;
+    const mc = mumbaiCanvasRef.current;
+    if (!mc) return;
+
+    const roads = mumbaiRoadsRef.current;
+    const coasts = mumbaiCoastRef.current;
+    if ((!roads || roads.length === 0) && (!coasts || coasts.length === 0)) {
+      return; // nothing to draw yet
+    }
+
+    const dpr = window.devicePixelRatio || 1;
+    /* Native render resolution — high enough that even at full-screen
+       display the roads stay sharp. Aspect matches the bbox.            */
+    const lonSpan = MUMBAI_ROADS_BBOX.east - MUMBAI_ROADS_BBOX.west;
+    const latSpan = MUMBAI_ROADS_BBOX.north - MUMBAI_ROADS_BBOX.south;
+    const RENDER_W = 1600;
+    const RENDER_H = Math.round((RENDER_W * latSpan) / lonSpan);
+
+    mc.width = RENDER_W * dpr;
+    mc.height = RENDER_H * dpr;
+    /* CSS dimensions are set by the per-frame layout in renderDOM */
+
+    const ctx = mc.getContext('2d');
+    if (!ctx) return;
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, mc.width, mc.height);
+    ctx.scale(dpr, dpr);
+
+    /* Mercator projection fitted exactly to the Mumbai canvas.
+       Roads + coastline both drawn through this projection.    */
+    const projection = d3
+      .geoMercator()
+      .fitExtent(
+        [[10, 10], [RENDER_W - 10, RENDER_H - 10]],
+        {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [MUMBAI_ROADS_BBOX.west, MUMBAI_ROADS_BBOX.south],
+              [MUMBAI_ROADS_BBOX.east, MUMBAI_ROADS_BBOX.south],
+              [MUMBAI_ROADS_BBOX.east, MUMBAI_ROADS_BBOX.north],
+              [MUMBAI_ROADS_BBOX.west, MUMBAI_ROADS_BBOX.north],
+              [MUMBAI_ROADS_BBOX.west, MUMBAI_ROADS_BBOX.south],
+            ],
+          ],
+        } as Feature<Geometry, GeoJsonProperties>['geometry']
+      )
+      .precision(0.1);
+
+    /* Parchment ground */
+    ctx.fillStyle = COLOR_LAND;
+    ctx.fillRect(0, 0, RENDER_W, RENDER_H);
+
+    /* Coastline — bronze hairline */
+    if (coasts && coasts.length > 0) {
+      ctx.strokeStyle = 'rgba(139, 101, 8, 0.55)';
+      ctx.lineWidth = 1.1;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      coasts.forEach((line) => {
+        ctx.beginPath();
+        line.forEach(([lon, lat], i) => {
+          const pt = projection([lon, lat]);
+          if (!pt) return;
+          if (i === 0) ctx.moveTo(pt[0], pt[1]);
+          else ctx.lineTo(pt[0], pt[1]);
+        });
+        ctx.stroke();
+      });
+    }
+
+    /* Roads — two passes for visual hierarchy.
+       Major roads thicker, minor roads thinner.                */
+    if (roads && roads.length > 0) {
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+
+      /* Underglow pass — slightly wider, lower opacity */
+      roads.forEach((road) => {
+        ctx.beginPath();
+        road.line.forEach(([lon, lat], i) => {
+          const pt = projection([lon, lat]);
+          if (!pt) return;
+          if (i === 0) ctx.moveTo(pt[0], pt[1]);
+          else ctx.lineTo(pt[0], pt[1]);
+        });
+        ctx.lineWidth = road.weight * 2.4;
+        ctx.strokeStyle = 'rgba(184, 134, 11, 0.18)';
+        ctx.stroke();
+      });
+
+      /* Top stroke — sharp bronze */
+      roads.forEach((road) => {
+        ctx.beginPath();
+        road.line.forEach(([lon, lat], i) => {
+          const pt = projection([lon, lat]);
+          if (!pt) return;
+          if (i === 0) ctx.moveTo(pt[0], pt[1]);
+          else ctx.lineTo(pt[0], pt[1]);
+        });
+        ctx.lineWidth = road.weight * 1.4;
+        ctx.strokeStyle = 'rgba(139, 101, 8, 0.65)';
+        ctx.stroke();
+      });
+    }
+
+    mumbaiRenderedRef.current = true;
+  }
+
+  /** Mercator projection fitting all of India to the viewport, centred. */
+  function makeIndiaBaseMercator(w: number, h: number) {
+    /* India 29° span → fills 85% of viewport */
     const indiaSpan = 29;
     const scaleByWidth = (w * 0.85) / ((indiaSpan * Math.PI) / 180) / 6371;
     const scaleByHeight = (h * 0.85) / ((indiaSpan * Math.PI) / 180) / 6371;
@@ -254,15 +439,20 @@ export default function AtlasGlobe() {
 
     return d3
       .geoMercator()
-      .scale(baseScale * MAX_ZOOM_FACTOR)
-      .center([MUMBAI_FOCAL[0], MUMBAI_FOCAL[1]])
+      .scale(baseScale)
+      .center([INDIA_CENTER[0], INDIA_CENTER[1]])
       .translate([w / 2, h / 2]);
   }
 
   /* ─── Compute scene state from progress ─── */
   function computeParams(p: number) {
     const globeOpacityVal = 1 - smoothstep(0.55, 0.7, p);
-    const mercatorOpacity = smoothstep(0.55, 0.7, p);
+    /* Mercator fades in stages 3-4, fades back out for stage 5 so the
+       sharp Mumbai canvas can take over without overlap blur.         */
+    const mercatorOpacity =
+      smoothstep(0.55, 0.7, p) * (1 - smoothstep(0.85, 0.93, p));
+    /* Mumbai canvas — fades in during stage 5 */
+    const mumbaiOpacity = smoothstep(0.85, 0.95, p);
 
     /* Mercator focal + zoom */
     let focal: [number, number];
@@ -294,7 +484,7 @@ export default function AtlasGlobe() {
         lerp(MAHARASHTRA_FOCAL[0], MUMBAI_FOCAL[0], t),
         lerp(MAHARASHTRA_FOCAL[1], MUMBAI_FOCAL[1], t),
       ];
-      zoomFactor = lerp(3, MAX_ZOOM_FACTOR, t);
+      zoomFactor = lerp(3, 22, t);
     }
 
     const mumbaiDotsOpacity = smoothstep(0.93, 1, p);
@@ -302,6 +492,7 @@ export default function AtlasGlobe() {
     return {
       globeOpacity: globeOpacityVal,
       mercatorOpacity,
+      mumbaiOpacity,
       focal,
       zoomFactor,
       mumbaiDotsOpacity,
@@ -326,13 +517,15 @@ export default function AtlasGlobe() {
     const w = window.innerWidth;
     const h = window.innerHeight;
 
-    const maxProjection = makeMaxZoomMercator(w, h);
-    const focalInMax = maxProjection(params.focal);
-    if (!focalInMax) return;
+    /* Project the focal point at base zoom (matches the rendered canvas).
+       Then CSS-scale up by zoomFactor and translate so focal stays centred. */
+    const baseProjection = makeIndiaBaseMercator(w, h);
+    const focalAtBase = baseProjection(params.focal);
+    if (!focalAtBase) return;
 
-    const cssScale = params.zoomFactor / MAX_ZOOM_FACTOR;
-    const tx = w / 2 - focalInMax[0] * cssScale;
-    const ty = h / 2 - focalInMax[1] * cssScale;
+    const cssScale = params.zoomFactor;
+    const tx = w / 2 - focalAtBase[0] * cssScale;
+    const ty = h / 2 - focalAtBase[1] * cssScale;
 
     mc.style.opacity = String(params.mercatorOpacity);
     mc.style.transform = `translate(${tx}px, ${ty}px) scale(${cssScale})`;
@@ -343,6 +536,8 @@ export default function AtlasGlobe() {
   function renderDOM() {
     const p = stateRef.current.progress;
     const params = computeParams(p);
+    const w = window.innerWidth;
+    const h = window.innerHeight;
 
     /* Pipe progress to Three.js scene */
     atlasGlobeProgress.value = p;
@@ -367,19 +562,47 @@ export default function AtlasGlobe() {
 
     applyMercatorTransform(params);
 
-    /* Mumbai cluster — projected through max-zoom mercator, then CSS-transformed */
+    /* Mumbai canvas — high-res road network. Positioned via the same
+       projection math as the pins so it stays geographically correct.
+       Sized to the projected bbox at the current zoom factor.           */
+    const mumbaiCanvas = mumbaiCanvasRef.current;
+    if (mumbaiCanvas) {
+      const mumbaiOpacity = params.mumbaiOpacity;
+      mumbaiCanvas.style.opacity = String(mumbaiOpacity);
+      if (mumbaiOpacity > 0.001) {
+        if (!mumbaiRenderedRef.current) renderMumbaiOnce();
+        const projection = makeIndiaBaseMercator(w, h);
+        const cssScale = params.zoomFactor;
+        const focalAtBase = projection(params.focal);
+        if (focalAtBase) {
+          const tx = w / 2 - focalAtBase[0] * cssScale;
+          const ty = h / 2 - focalAtBase[1] * cssScale;
+          const nw = projection([MUMBAI_ROADS_BBOX.west, MUMBAI_ROADS_BBOX.north]);
+          const se = projection([MUMBAI_ROADS_BBOX.east, MUMBAI_ROADS_BBOX.south]);
+          if (nw && se) {
+            mumbaiCanvas.style.left = `${nw[0] * cssScale + tx}px`;
+            mumbaiCanvas.style.top = `${nw[1] * cssScale + ty}px`;
+            mumbaiCanvas.style.width = `${(se[0] - nw[0]) * cssScale}px`;
+            mumbaiCanvas.style.height = `${(se[1] - nw[1]) * cssScale}px`;
+            mumbaiCanvas.style.visibility = 'visible';
+          }
+        }
+      } else {
+        mumbaiCanvas.style.visibility = 'hidden';
+      }
+    }
+
+    /* Mumbai cluster — projected through India-base mercator, then CSS-transformed */
     const dotsLayer = dotsLayerRef.current;
-    const w = window.innerWidth;
-    const h = window.innerHeight;
     if (dotsLayer) {
       dotsLayer.style.opacity = String(params.mumbaiDotsOpacity);
       if (params.mumbaiDotsOpacity > 0.001) {
-        const projection = makeMaxZoomMercator(w, h);
-        const cssScale = params.zoomFactor / MAX_ZOOM_FACTOR;
-        const focalInMax = projection(params.focal);
-        if (focalInMax) {
-          const tx = w / 2 - focalInMax[0] * cssScale;
-          const ty = h / 2 - focalInMax[1] * cssScale;
+        const projection = makeIndiaBaseMercator(w, h);
+        const cssScale = params.zoomFactor;
+        const focalAtBase = projection(params.focal);
+        if (focalAtBase) {
+          const tx = w / 2 - focalAtBase[0] * cssScale;
+          const ty = h / 2 - focalAtBase[1] * cssScale;
           const children = dotsLayer.children;
           MUMBAI_LOCATIONS.forEach((loc, i) => {
             const el = children[i] as HTMLDivElement | undefined;
@@ -520,7 +743,7 @@ export default function AtlasGlobe() {
             position: 'absolute',
             inset: 0,
             zIndex: 2,
-            pointerEvents: 'auto',
+            pointerEvents: 'none',
             transformOrigin: 'center center',
             willChange: 'transform',
           }}
@@ -544,6 +767,24 @@ export default function AtlasGlobe() {
           }}
         />
 
+        {/* Mumbai canvas — sharp road network at native resolution.
+           Sized to the bbox in CSS, so its render-pixel-density stays
+           constant regardless of zoom — no blur.                       */}
+        <canvas
+          ref={mumbaiCanvasRef}
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            zIndex: 2,
+            pointerEvents: 'none',
+            opacity: 0,
+            visibility: 'hidden',
+            willChange: 'opacity, left, top, width, height',
+          }}
+        />
+
         {/* Mumbai cluster — DOM, projected through max-zoom mercator */}
         <div
           ref={dotsLayerRef}
@@ -551,61 +792,88 @@ export default function AtlasGlobe() {
           style={{
             position: 'absolute',
             inset: 0,
-            zIndex: 3,
+            zIndex: 4,
+            /* Pins themselves enable pointer events; the layer is pass-through
+               so scroll continues to work normally outside pin hit areas.    */
             pointerEvents: 'none',
             opacity: 0,
           }}
         >
-          {MUMBAI_LOCATIONS.map((loc) => (
-            <div
-              key={loc.name}
-              style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                transform: 'translate(-50%, -50%)',
-                visibility: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                willChange: 'left, top',
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: 9,
-                  fontWeight: 500,
-                  letterSpacing: '0.2em',
-                  color: COLOR_DEEP_BROWN,
-                  textShadow: '0 0 8px rgba(245,240,232,0.95)',
-                  marginBottom: 4,
+          {MUMBAI_LOCATIONS.map((loc) => {
+            const project = projects.find((p) => p.id === loc.projectId);
+            return (
+              <button
+                key={loc.name}
+                type="button"
+                aria-label={`View project: ${project?.name ?? loc.name}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (project) setSelectedProject(project);
                 }}
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  transform: 'translate(-50%, -50%)',
+                  visibility: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  /* Pin gets pointer events when visible */
+                  pointerEvents: 'auto',
+                  cursor: 'pointer',
+                  background: 'transparent',
+                  border: 'none',
+                  padding: 8, // hit-target padding around the visible dot
+                  willChange: 'left, top',
+                }}
+                className="atlas-pin"
               >
-                {loc.name}
-              </span>
-              <div style={{ position: 'relative', width: 8, height: 8 }}>
                 <span
                   style={{
-                    position: 'absolute',
-                    inset: 0,
-                    borderRadius: '50%',
-                    backgroundColor: COLOR_BRONZE,
-                    zIndex: 2,
+                    fontFamily: 'var(--font-body)',
+                    fontSize: 10,
+                    fontWeight: 500,
+                    letterSpacing: '0.2em',
+                    color: COLOR_DEEP_BROWN,
+                    textShadow: '0 0 8px rgba(245,240,232,0.95)',
+                    marginBottom: 4,
+                    pointerEvents: 'none',
                   }}
-                />
-                <span
+                >
+                  {loc.name}
+                </span>
+                <div
                   style={{
-                    position: 'absolute',
-                    inset: 0,
-                    borderRadius: '50%',
-                    border: `1px solid ${COLOR_BRONZE}`,
-                    animation: 'atlas-pulse 1.5s ease-out infinite',
+                    position: 'relative',
+                    width: 10,
+                    height: 10,
+                    pointerEvents: 'none',
                   }}
-                />
-              </div>
-            </div>
-          ))}
+                >
+                  <span
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      borderRadius: '50%',
+                      backgroundColor: COLOR_BRONZE,
+                      zIndex: 2,
+                      boxShadow: '0 0 0 2px rgba(245,240,232,0.95)',
+                    }}
+                  />
+                  <span
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      borderRadius: '50%',
+                      border: `1px solid ${COLOR_BRONZE}`,
+                      animation: 'atlas-pulse 1.5s ease-out infinite',
+                    }}
+                  />
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         {/* Warm vignette — final stage */}
@@ -707,7 +975,17 @@ export default function AtlasGlobe() {
           0%   { transform: scale(1);   opacity: 1; }
           100% { transform: scale(2.5); opacity: 0; }
         }
+        .atlas-pin:hover { transform: translate(-50%, -50%) scale(1.15) !important; }
+        .atlas-pin { transition: transform 220ms cubic-bezier(0.16,1,0.3,1); }
       `}</style>
+
+      {/* Project showcase modal — mounts only when a pin is clicked */}
+      {selectedProject && (
+        <ProjectModal
+          project={selectedProject}
+          onClose={() => setSelectedProject(null)}
+        />
+      )}
     </section>
   );
 }
