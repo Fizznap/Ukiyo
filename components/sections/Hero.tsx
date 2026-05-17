@@ -240,7 +240,6 @@ export default function Hero() {
               width: '300px', 
               height: '420px', 
               transform: 'rotate(-5deg) translate(-80px, -40px)', 
-              mixBlendMode: 'multiply',
               zIndex: 1,
               boxShadow: '0 20px 40px rgba(44,24,16,0.1)'
             }}
@@ -265,7 +264,6 @@ export default function Hero() {
               width: '280px', 
               height: '380px', 
               transform: 'rotate(6deg) translate(80px, 60px)', 
-              mixBlendMode: 'multiply', 
               zIndex: 2,
               boxShadow: '0 20px 40px rgba(44,24,16,0.1)'
             }}
@@ -290,7 +288,6 @@ export default function Hero() {
               width: '220px', 
               height: '300px', 
               transform: 'rotate(-2deg) translate(10px, 160px)', 
-              mixBlendMode: 'multiply', 
               zIndex: 3,
               boxShadow: '0 20px 40px rgba(44,24,16,0.1)'
             }}
