@@ -5,7 +5,7 @@ import { gsap } from 'gsap';
 
 /**
  * LoadingScreen
- * - Full-screen #F5F0E8 beige
+ * - Full-screen #F5F5DC beige
  * - UKIYO wordmark: Cormorant Garamond 80px, tracking 0.35em
  * - Bronze hairline: animates 0 → 180px over 1.8s
  * - "Designed With Intent." sub-label fades in at 0.6s

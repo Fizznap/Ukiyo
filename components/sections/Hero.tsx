@@ -74,7 +74,7 @@ export default function Hero() {
         position: 'relative',
         width: '100%',
         minHeight: '100vh',
-        backgroundColor: '#F5F0E8', // Warm beige
+        backgroundColor: '#F5F5DC', // Warm beige
         display: 'flex',
         alignItems: 'center',
         overflow: 'hidden',
@@ -177,7 +177,7 @@ export default function Hero() {
               href="#projects"
               style={{
                 backgroundColor: '#2C1810',
-                color: '#F5F0E8',
+                color: '#F5F5DC',
                 padding: '1.2rem 2.5rem',
                 textDecoration: 'none',
                 fontFamily: 'var(--font-body), "DM Sans", sans-serif',
@@ -208,7 +208,7 @@ export default function Hero() {
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = '#2C1810';
-                e.currentTarget.style.color = '#F5F0E8';
+                e.currentTarget.style.color = '#F5F5DC';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = 'transparent';

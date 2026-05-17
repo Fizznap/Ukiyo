@@ -189,7 +189,7 @@ export default function Projects() {
                             fontSize: 'var(--text-xs)',
                             letterSpacing: 'var(--ls-wider)',
                             textTransform: 'uppercase',
-                            color: 'rgba(245,240,232,0.7)',
+                            color: 'rgba(245,245,220,0.7)',
                             marginBottom: 'var(--space-2)',
                           }}
                         >
@@ -210,7 +210,7 @@ export default function Projects() {
                           style={{
                             fontFamily: 'var(--font-body)',
                             fontSize: 'var(--text-xs)',
-                            color: 'rgba(245,240,232,0.6)',
+                            color: 'rgba(245,245,220,0.6)',
                             marginTop: 'var(--space-2)',
                           }}
                         >

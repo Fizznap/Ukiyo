@@ -102,9 +102,9 @@ export default function ProjectModal({ project, onClose }: Props) {
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
           overflow: 'hidden',
-          backgroundColor: '#F5F0E8', // Solid beige background to contrast the glass
+          backgroundColor: '#F5F5DC', // Solid beige background to contrast the glass
           borderRadius: '16px', // Rounded corners for premium feel
-          border: '1px solid rgba(245, 240, 232, 0.6)',
+          border: '1px solid rgba(245, 245, 220, 0.6)',
           boxShadow: '0 32px 80px rgba(44,24,16,0.15)',
           opacity: 0,
           transform: 'scale(0.94)',
@@ -138,13 +138,13 @@ export default function ProjectModal({ project, onClose }: Props) {
               top: '1.25rem',
               left: '1.25rem',
               padding: '4px 12px',
-              border: '1px solid rgba(245,240,232,0.5)',
-              backgroundColor: 'rgba(245,240,232,0.15)',
+              border: '1px solid rgba(245,245,220,0.5)',
+              backgroundColor: 'rgba(245,245,220,0.15)',
               backdropFilter: 'blur(8px)',
               borderRadius: '99px',
             }}
           >
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.625rem', fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#F5F0E8' }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.625rem', fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#F5F5DC' }}>
               {CATEGORY_LABELS[project.category] ?? project.category}
             </span>
           </div>
@@ -153,7 +153,7 @@ export default function ProjectModal({ project, onClose }: Props) {
         {/* ── Right: Content ── */}
         <div
           style={{
-            backgroundColor: '#F5F0E8', // Match solid panel background
+            backgroundColor: '#F5F5DC', // Match solid panel background
             padding: 'clamp(1.75rem, 4vw, 2.75rem)',
             display: 'flex',
             flexDirection: 'column',
@@ -220,7 +220,7 @@ export default function ProjectModal({ project, onClose }: Props) {
               { label: 'Category',   value: CATEGORY_LABELS[project.category] ?? project.category },
               { label: 'Location',   value: project.area },
             ].map(({ label, value }) => (
-              <div key={label} style={{ padding: '0.9rem 1rem', backgroundColor: 'rgba(245,240,232,0.8)' }}>
+              <div key={label} style={{ padding: '0.9rem 1rem', backgroundColor: 'rgba(245,245,220,0.8)' }}>
                 <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--color-muted-brown)', marginBottom: '0.3rem' }}>{label}</p>
                 <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem', fontWeight: 400, color: 'var(--color-deep-brown)' }}>{value}</p>
               </div>
@@ -245,7 +245,7 @@ export default function ProjectModal({ project, onClose }: Props) {
                     border: '1px solid var(--color-glass-border)',
                     borderRadius: '99px',
                     padding: '3px 10px',
-                    backgroundColor: 'rgba(245, 240, 232, 0.4)',
+                    backgroundColor: 'rgba(245, 245, 220, 0.4)',
                   }}
                 >
                   {pill}

@@ -12,7 +12,7 @@
    ---------------------------------------------------------- */
 :root {
   /* Primary palette */
-  --color-beige:        #F5F0E8;
+  --color-beige:        #F5F5DC;
   --color-deep-brown:   #2C1810;
   --color-bronze:       #B8860B;
   --color-card:         #EDE8DF;
@@ -26,7 +26,7 @@
 
   /* Glass / border */
   --color-glass-border: rgba(44, 24, 16, 0.12);
-  --color-glass-bg:     rgba(245, 240, 232, 0.72);
+  --color-glass-bg:     rgba(245, 245, 220, 0.72);
 
   /* Bronze with opacity variants */
   --color-bronze-10:    rgba(184, 134, 11, 0.10);

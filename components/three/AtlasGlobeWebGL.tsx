@@ -251,7 +251,7 @@ export default function AtlasGlobeWebGL({ active, opacity }: Props) {
         pointerEvents: 'none',
         /* Atmospheric edge fade — soft warm vignette into the beige page */
         boxShadow:
-          'inset 0 0 60px 10px rgba(245, 240, 232, 0.55), 0 30px 80px rgba(44, 24, 16, 0.08)',
+          'inset 0 0 60px 10px rgba(245, 245, 220, 0.55), 0 30px 80px rgba(44, 24, 16, 0.08)',
       }}
     />
   );

@@ -3,7 +3,6 @@
 import { useEffect, useRef } from 'react';
 import maplibregl, {
   type Map as MapLibreMap,
-  type Marker,
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { Project } from '@/data/projects';
@@ -18,7 +17,7 @@ import type { Project } from '@/data/projects';
  *   - Free vector tiles (no API key)
  *   - Single map instance, mounted lazily by the parent
  *   - interactive: false → wheel events bubble, scroll keeps working
- *   - Six bronze DOM markers, click → project modal
+ *   - Six bronze pins via GeoJSON source + circle/symbol layers
  */
 
 const MUMBAI_CENTER: [number, number] = [72.875, 19.10];
@@ -26,7 +25,7 @@ const MUMBAI_ZOOM = 10.6;
 
 const COLOR_BRONZE = '#B8860B';
 const COLOR_DEEP_BROWN = '#2C1810';
-const COLOR_BEIGE = '#F5F0E8';
+const COLOR_BEIGE = '#F5F5DC';
 
 /* OpenFreeMap positron style — vector tiles, free, no token */
 const STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';
@@ -165,7 +164,6 @@ function applyBeigePalette(map: MapLibreMap) {
 export default function MumbaiMap({ locations, projects, onPinClick }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
-  const markersRef = useRef<Marker[]>([]);
   const onPinClickRef = useRef(onPinClick);
   useEffect(() => {
     onPinClickRef.current = onPinClick;
@@ -199,119 +197,79 @@ export default function MumbaiMap({ locations, projects, onPinClick }: Props) {
     });
 
     map.on('load', () => {
-      locations.forEach((loc) => {
-        const project = projects.find((p) => p.id === loc.projectId);
+      /* ── GeoJSON source: one feature per Mumbai location ── */
+      map.addSource('mumbai-pins', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: locations.map((loc) => ({
+            type: 'Feature' as const,
+            geometry: {
+              type: 'Point' as const,
+              /* GeoJSON is always [longitude, latitude] */
+              coordinates: [loc.lon, loc.lat],
+            },
+            properties: {
+              name: loc.displayName,
+              projectId: loc.projectId,
+            },
+          })),
+        },
+      });
 
-        /* Marker root — sized exactly to the visible dot+ring (24×24).
-           The label is appended OUTSIDE this element so it can never
-           influence the button's bounding box, which is what MapLibre
-           uses to anchor the marker at the geographic point.           */
-        const el = document.createElement('div');
-        el.className = 'mumbai-pin-wrapper';
-        el.style.cssText = `
-          position: relative;
-          width: 24px;
-          height: 24px;
-          margin: 0;
-          padding: 0;
-        `;
+      /* ── Circle layer — bronze dot ── */
+      map.addLayer({
+        id: 'mumbai-pins-circle',
+        type: 'circle',
+        source: 'mumbai-pins',
+        paint: {
+          'circle-radius': 8,
+          'circle-color': COLOR_BRONZE,
+          'circle-stroke-width': 2,
+          'circle-stroke-color': COLOR_BEIGE,
+          'circle-opacity': 1,
+        },
+      });
 
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.setAttribute(
-          'aria-label',
-          `View project: ${project?.name ?? loc.displayName}`
-        );
-        button.title = loc.displayName;
-        button.className = 'mumbai-pin';
-        button.style.cssText = `
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 24px;
-          height: 24px;
-          min-width: 0;
-          min-height: 0;
-          margin: 0;
-          padding: 0;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          box-sizing: border-box;
-        `;
-        el.appendChild(button);
+      /* ── Symbol layer — location name below dot ── */
+      map.addLayer({
+        id: 'mumbai-pins-label',
+        type: 'symbol',
+        source: 'mumbai-pins',
+        layout: {
+          'text-field': ['get', 'name'],
+          'text-font': ['Open Sans Regular'],
+          'text-size': 11,
+          'text-offset': [0, 1.5],
+          'text-anchor': 'top',
+        },
+        paint: {
+          'text-color': COLOR_DEEP_BROWN,
+          'text-halo-color': COLOR_BEIGE,
+          'text-halo-width': 2,
+        },
+      });
 
-        /* Outer bronze ring — absolutely centred at button geometric centre */
-        const ring = document.createElement('span');
-        ring.style.cssText = `
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 20px;
-          height: 20px;
-          margin-left: -10px;
-          margin-top: -10px;
-          border-radius: 50%;
-          border: 1.5px solid ${COLOR_BRONZE};
-          background: rgba(245, 240, 232, 0.92);
-          box-sizing: border-box;
-          pointer-events: none;
-        `;
-        button.appendChild(ring);
+      /* ── Click handler — fires project modal via parent callback ── */
+      map.on('click', 'mumbai-pins-circle', (e) => {
+        const feature = e.features?.[0];
+        if (!feature) return;
+        const projectId = feature.properties?.projectId as string | undefined;
+        if (!projectId) return;
+        const project = projects.find((p) => p.id === projectId);
+        if (project) onPinClickRef.current(project);
+      });
 
-        /* Inner bronze dot — absolutely centred over the ring */
-        const dot = document.createElement('span');
-        dot.style.cssText = `
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 8px;
-          height: 8px;
-          margin-left: -4px;
-          margin-top: -4px;
-          border-radius: 50%;
-          background: ${COLOR_BRONZE};
-          pointer-events: none;
-        `;
-        button.appendChild(dot);
-
-        /* Label sits OUTSIDE the button — appended to the wrapper so the
-           button's box stays exactly 24×24 and MapLibre's centre anchor
-           lands the dot precisely on the geographic coordinate.         */
-        const label = document.createElement('span');
-        label.textContent = loc.displayName;
-        label.style.cssText = `
-          position: absolute;
-          left: calc(50% + 14px);
-          top: 50%;
-          transform: translateY(-50%);
-          white-space: nowrap;
-          font-family: var(--font-body), 'DM Sans', system-ui, sans-serif;
-          font-size: 13px;
-          font-weight: 500;
-          color: ${COLOR_DEEP_BROWN};
-          text-shadow: 0 0 6px rgba(245, 240, 232, 0.95);
-          pointer-events: none;
-        `;
-        el.appendChild(label);
-
-        if (project) {
-          button.addEventListener('click', (e) => {
-            e.stopPropagation();
-            onPinClickRef.current(project);
-          });
-        }
-
-        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
-          .setLngLat([loc.lon, loc.lat])
-          .addTo(map);
-        markersRef.current.push(marker);
+      /* Pointer cursor on hover */
+      map.on('mouseenter', 'mumbai-pins-circle', () => {
+        map.getCanvas().style.cursor = 'pointer';
+      });
+      map.on('mouseleave', 'mumbai-pins-circle', () => {
+        map.getCanvas().style.cursor = '';
       });
     });
 
     return () => {
-      markersRef.current.forEach((m) => m.remove());
-      markersRef.current = [];
       map.remove();
       mapRef.current = null;
     };
@@ -335,11 +293,10 @@ export default function MumbaiMap({ locations, projects, onPinClick }: Props) {
       />
 
       <style>{`
-        .mumbai-pin:hover { transform: scale(1.12); transition: transform 220ms cubic-bezier(0.16,1,0.3,1); }
         .maplibregl-ctrl-attrib {
           font-family: var(--font-body), system-ui, sans-serif;
           font-size: 9px !important;
-          background: rgba(245, 240, 232, 0.7) !important;
+          background: rgba(245, 245, 220, 0.7) !important;
           color: var(--color-muted-brown) !important;
           padding: 2px 6px !important;
         }

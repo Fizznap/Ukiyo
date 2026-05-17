@@ -42,7 +42,7 @@ const INDIA_STATES_URLS = [
 const COLOR_LAND = '#D4C4A8';
 const COLOR_STATE_BORDER = 'rgba(44, 24, 16, 0.25)';
 const COLOR_BRONZE = '#B8860B';
-const COLOR_BEIGE = '#F5F0E8';
+const COLOR_BEIGE = '#F5F5DC';
 
 /* ─── Focal points (lon, lat) ─── */
 const MAHARASHTRA_FOCAL: [number, number] = [76.5, 19.7];
@@ -62,13 +62,13 @@ const MUMBAI_LOCATIONS: {
   lat: number;
   projectId: string;
 }[] = [
-  { name: 'MALAD',        displayName: 'Malad',        lon: 72.84826822995392, lat: 19.187353567963818, projectId: 'andheri-wellness-spa' },
-  { name: 'JUHU',         displayName: 'Juhu',         lon: 72.827317,          lat: 19.101223,          projectId: 'juhu-boutique-hotel' },
-  { name: 'POWAI',        displayName: 'Powai',        lon: 72.90213908506928,  lat: 19.116262554791046, projectId: 'powai-tech-office' },
-  { name: 'BANDRA',       displayName: 'Bandra',       lon: 72.82847492208849,  lat: 19.059124135477553, projectId: 'bandra-penthouse' },
-  { name: 'WORLI',        displayName: 'Worli',        lon: 72.81590633328825,  lat: 18.99830438711471,  projectId: 'worli-sea-view' },
-  { name: 'MALABAR HILL', displayName: 'Malabar Hill', lon: 72.79816983226536,  lat: 18.952973064468384, projectId: 'malabar-hill-residence' },
-];
+    { name: 'MALAD', displayName: 'Malad', lon: 72.84826822995392, lat: 19.187353567963818, projectId: 'andheri-wellness-spa' },
+    { name: 'JUHU', displayName: 'Juhu', lon: 72.827317, lat: 19.101223, projectId: 'juhu-boutique-hotel' },
+    { name: 'POWAI', displayName: 'Powai', lon: 72.9054, lat: 19.1197, projectId: 'powai-tech-office' },
+    { name: 'BANDRA', displayName: 'Bandra', lon: 72.8308, lat: 19.0552, projectId: 'bandra-penthouse' },
+    { name: 'WORLI', displayName: 'Worli', lon: 72.81511037405615, lat: 19.018671000403165, projectId: 'worli-sea-view' },
+    { name: 'MALABAR HILL', displayName: 'Malabar Hill', lon: 72.79451666085933, lat: 18.947808071384053, projectId: 'malabar-hill-residence' },
+  ];
 
 /* ─── Utilities ─── */
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -577,7 +577,7 @@ export default function AtlasGlobe() {
             opacity: 0,
             pointerEvents: 'none',
             background:
-              'radial-gradient(ellipse at center, transparent 40%, rgba(245,240,232,0.4) 70%, rgba(245,240,232,0.85) 100%)',
+              'radial-gradient(ellipse at center, transparent 40%, rgba(245,245,220,0.4) 70%, rgba(245,245,220,0.85) 100%)',
           }}
         />
 
