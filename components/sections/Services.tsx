@@ -39,7 +39,7 @@ export default function Services() {
       id="services"
       aria-labelledby="services-heading"
       className="section"
-      style={{ backgroundColor: 'var(--color-beige)' }}
+      style={{ backgroundColor: '#EDEADF' }}
     >
       <div className="container">
         {/* ── Header ── */}

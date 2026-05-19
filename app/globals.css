@@ -12,11 +12,11 @@
    ---------------------------------------------------------- */
 :root {
   /* Primary palette */
-  --color-beige:        #F5F5DC;
+  --color-beige:        #EDEADF;
   --color-deep-brown:   #2C1810;
   --color-bronze:       #B8860B;
-  --color-card:         #EDE8DF;
-  --color-card-hover:   #E8E2D8;
+  --color-card:         #E5E2D7;
+  --color-card-hover:   #DEDAD0;
 
   /* Semantic aliases */
   --color-bg:           var(--color-beige);
@@ -26,7 +26,7 @@
 
   /* Glass / border */
   --color-glass-border: rgba(44, 24, 16, 0.12);
-  --color-glass-bg:     rgba(245, 245, 220, 0.72);
+  --color-glass-bg:     rgba(237, 234, 223, 0.72);
 
   /* Bronze with opacity variants */
   --color-bronze-10:    rgba(184, 134, 11, 0.10);
@@ -165,15 +165,14 @@ html {
   height: 100%;
 }
 
-body {
-  background-color: var(--color-beige);
-  color: var(--color-deep-brown);
+html, body {
+  background-color: #EDEADF !important;
+  color: #2C1810;
   font-family: var(--font-body);
   font-weight: var(--fw-regular);
   font-size: var(--text-base);
   line-height: var(--lh-relaxed);
   min-height: 100%;
-  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   cursor: none; /* Custom bronze cursor replaces default */

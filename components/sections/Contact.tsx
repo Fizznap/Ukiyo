@@ -76,7 +76,7 @@ export default function Contact() {
       id="contact"
       aria-labelledby="contact-heading"
       className="section"
-      style={{ backgroundColor: 'var(--color-beige)' }}
+      style={{ backgroundColor: '#EDEADF' }}
     >
       <div className="container">
         {/* ── Header ── */}

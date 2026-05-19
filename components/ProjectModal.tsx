@@ -102,7 +102,7 @@ export default function ProjectModal({ project, onClose }: Props) {
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
           overflow: 'hidden',
-          backgroundColor: '#F5F5DC', // Solid beige background to contrast the glass
+          backgroundColor: '#EDEADF', // Solid beige background to contrast the glass
           borderRadius: '16px', // Rounded corners for premium feel
           border: '1px solid rgba(245, 245, 220, 0.6)',
           boxShadow: '0 32px 80px rgba(44,24,16,0.15)',
@@ -144,7 +144,7 @@ export default function ProjectModal({ project, onClose }: Props) {
               borderRadius: '99px',
             }}
           >
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.625rem', fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#F5F5DC' }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.625rem', fontWeight: 500, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#EDEADF' }}>
               {CATEGORY_LABELS[project.category] ?? project.category}
             </span>
           </div>
@@ -153,7 +153,7 @@ export default function ProjectModal({ project, onClose }: Props) {
         {/* ── Right: Content ── */}
         <div
           style={{
-            backgroundColor: '#F5F5DC', // Match solid panel background
+            backgroundColor: '#EDEADF', // Match solid panel background
             padding: 'clamp(1.75rem, 4vw, 2.75rem)',
             display: 'flex',
             flexDirection: 'column',

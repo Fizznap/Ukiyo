@@ -94,7 +94,7 @@ export const RESULTS: Record<DesignProfile, QuizResult> = {
     title: 'The Refined Minimalist',
     tagline: 'You want less — but better.',
     description: 'Every object earns its place in your world. You appreciate considered restraint, precision of detail, and the luxury of a room that doesn\'t shout. Quality over quantity, always.',
-    palette: ['#F5F0E8', '#2C1810', '#B8860B', '#EDE8DF'],
+    palette: ['#EDEADF', '#2C1810', '#B8860B', '#EDE8DF'],
     service: 'residential-design',
   },
   'warm-maximalist': {

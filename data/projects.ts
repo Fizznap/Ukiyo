@@ -4,6 +4,12 @@ export type ProjectCategory =
   | 'hospitality'
   | 'spa';
 
+export interface ProjectMaterial {
+  name: string;
+  type: string;
+  image: string;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -15,6 +21,10 @@ export interface Project {
   image: string; // Unsplash URL — warm-toned
   tags: string[];
   excerpt: string;
+  beforeImage?: string;
+  afterImage?: string;
+  materials?: ProjectMaterial[];
+  processImages?: string[];
 }
 
 export const projects: Project[] = [

@@ -65,7 +65,7 @@ export default function Philosophy() {
       id="philosophy"
       aria-labelledby="philosophy-heading"
       className="section"
-      style={{ backgroundColor: 'var(--color-beige)' }}
+      style={{ backgroundColor: '#EDEADF' }}
     >
       <div className="container">
         {/* ── Header row ── */}

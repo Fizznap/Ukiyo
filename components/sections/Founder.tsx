@@ -34,7 +34,7 @@ export default function Founder() {
       id="studio"
       aria-labelledby="founder-heading"
       className="section"
-      style={{ backgroundColor: 'var(--color-beige)' }}
+      style={{ backgroundColor: '#EDEADF' }}
     >
       <div className="container">
         <p className="text-label founder-reveal" style={{ opacity: 0, transform: 'translateY(20px)', transition: 'opacity 700ms var(--ease-luxury), transform 700ms var(--ease-luxury)', marginBottom: 'clamp(3rem, 6vh, 5rem)' }}>

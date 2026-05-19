@@ -46,7 +46,7 @@ export default function Projects() {
       id="projects"
       aria-labelledby="projects-heading"
       className="section"
-      style={{ backgroundColor: 'var(--color-beige)' }}
+      style={{ backgroundColor: '#EDEADF' }}
     >
       <div className="container">
         {/* ── Header ── */}

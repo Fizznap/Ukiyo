@@ -42,7 +42,7 @@ const INDIA_STATES_URLS = [
 const COLOR_LAND = '#D4C4A8';
 const COLOR_STATE_BORDER = 'rgba(44, 24, 16, 0.25)';
 const COLOR_BRONZE = '#B8860B';
-const COLOR_BEIGE = '#F5F5DC';
+const COLOR_BEIGE = '#EDEADF';
 
 /* ─── Focal points (lon, lat) ─── */
 const MAHARASHTRA_FOCAL: [number, number] = [76.5, 19.7];

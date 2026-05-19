@@ -53,7 +53,7 @@ export default function Process() {
       ref={sectionRef}
       id="process"
       style={{
-        backgroundColor: 'var(--color-beige)',
+        backgroundColor: '#EDEADF',
         position: 'relative',
         display: 'flex',
       }}

@@ -79,7 +79,7 @@ export default function EmotionalJourney() {
       id="experience"
       aria-labelledby="experience-heading"
       className="section"
-      style={{ backgroundColor: 'var(--color-beige)' }}
+      style={{ backgroundColor: '#EDEADF' }}
     >
       <div className="container">
         {/* Section label */}

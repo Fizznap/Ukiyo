@@ -25,7 +25,7 @@ const MUMBAI_ZOOM = 10.6;
 
 const COLOR_BRONZE = '#B8860B';
 const COLOR_DEEP_BROWN = '#2C1810';
-const COLOR_BEIGE = '#F5F5DC';
+const COLOR_BEIGE = '#EDEADF';
 
 /* OpenFreeMap positron style — vector tiles, free, no token */
 const STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';

@@ -35,7 +35,7 @@ export default function Journal() {
       id="journal"
       aria-labelledby="journal-heading"
       className="section"
-      style={{ backgroundColor: 'var(--color-beige)' }}
+      style={{ backgroundColor: '#EDEADF' }}
     >
       <div className="container">
         {/* ── Header ── */}
