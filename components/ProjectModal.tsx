@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import type { Project } from '@/data/projects';
 
 interface Props {
@@ -256,8 +257,10 @@ export default function ProjectModal({ project, onClose }: Props) {
 
           {/* CTA Buttons */}
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '0.5rem' }}>
-            <button
+            <Link
+              href={`/projects/${project.id}`}
               id={`modal-view-${project.id}`}
+              onClick={handleClose}
               style={{
                 fontFamily: 'var(--font-body)',
                 fontSize: 'var(--text-label)',
@@ -271,11 +274,15 @@ export default function ProjectModal({ project, onClose }: Props) {
                 cursor: 'pointer',
                 transition: 'background 250ms var(--ease-luxury)',
                 flexShrink: 0,
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
               className="modal-cta-primary"
             >
               View Full Project
-            </button>
+            </Link>
             <button
               id={`modal-explore-${project.id}`}
               onClick={handleClose}

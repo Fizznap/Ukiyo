@@ -74,6 +74,7 @@ export default function Founder() {
                 fill
                 sizes="(max-width: 768px) 100vw, 45vw"
                 style={{ objectFit: 'cover', objectPosition: 'center top' }}
+                priority={true}
               />
               {/* Subtle warm overlay */}
               <div

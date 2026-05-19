@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { projects, FILTER_LABELS, type ProjectCategory } from '@/data/projects';
 
 type Filter = 'all' | ProjectCategory;
@@ -11,6 +12,7 @@ const FILTERS = Object.keys(FILTER_LABELS) as Filter[];
 export default function Projects() {
   const [active, setActive] = useState<Filter>('all');
   const sectionRef = useRef<HTMLElement>(null);
+  const router = useRouter();
 
   const filtered =
     active === 'all'
@@ -130,6 +132,7 @@ export default function Projects() {
                     exit={{ opacity: 0, scale: 0.97 }}
                     transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: i * 0.05 }}
                     aria-label={project.name}
+                    onClick={() => router.push(`/projects/${project.id}`)}
                     style={{
                       gridColumn: isWide ? 'span 7' : 'span 5',
                       position: 'relative',
